@@ -1,0 +1,30 @@
+# monitoring/grafana/provisioning/datasources/postgres.yml
+#
+# This file tells Grafana to automatically connect to PostgreSQL on startup.
+# Without this, you'd have to manually add the datasource through the UI
+# every time the container restarts.
+#
+# Provisioning = configuration as code.
+# Version-controlled, reproducible, no manual clicking.
+
+apiVersion: 1
+
+datasources:
+  - name: IoT_PostgreSQL
+    uid: PE80E288BF7F2C4BD
+    type: postgres
+    url: postgres:5432
+    database: iotdb
+    user: iotuser
+    secureJsonData:
+      password: iotpass
+    jsonData:
+      database: iotdb
+      sslmode: disable
+      maxOpenConns: 10
+      maxIdleConns: 2
+      connMaxLifetime: 14400
+      postgresVersion: 1500
+      timescaledb: false
+    isDefault: true
+    editable: true

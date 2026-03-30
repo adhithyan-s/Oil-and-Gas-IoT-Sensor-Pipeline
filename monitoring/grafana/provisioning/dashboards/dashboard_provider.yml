@@ -1,0 +1,16 @@
+# monitoring/grafana/provisioning/dashboards/dashboard.yml
+#
+# Tells Grafana where to find dashboard JSON files on startup.
+# Any .json file in the path below is automatically loaded.
+
+apiVersion: 1
+
+providers:
+  - name: IoT Sensor Dashboards
+    orgId: 1
+    type: file
+    disableDeletion: false
+    updateIntervalSeconds: 30   # reload dashboards every 30s (picks up changes)
+    allowUiUpdates: true
+    options:
+      path: /etc/grafana/provisioning/dashboards

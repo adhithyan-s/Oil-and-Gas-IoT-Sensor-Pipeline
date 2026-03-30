@@ -40,8 +40,8 @@ SILVER_PATH = "s3a://silver/sensor_readings/"
 GOLD_PATH   = "s3a://gold/equipment_health/"
  
 # PostgreSQL — where Grafana reads from
-PG_HOST = "localhost"
-PG_PORT = 5432
+PG_HOST = "127.0.0.1"
+PG_PORT = 5433
 PG_DB   = "iotdb"
 PG_USER = "iotuser"
 PG_PASS = "iotpass"
