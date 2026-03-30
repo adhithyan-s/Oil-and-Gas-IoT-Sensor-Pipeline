@@ -1,0 +1,55 @@
+# GitHub Actions CI pipeline.
+# Runs automatically on every git push and every pull request.
+#
+# What it does:
+#   1. Checks Python code style with flake8 (catches formatting issues)
+#   2. Runs unit tests with pytest
+
+name: CI Pipeline
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  lint-and-test:
+    runs-on: ubuntu-latest       # GitHub provides this VM for free
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Cache pip dependencies
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ hashFiles('requirements-ci.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-
+
+      - name: Install CI dependencies
+        # We use a lightweight requirements-ci.txt for CI
+        # (no pyspark/airflow — too heavy to install in CI, tested locally)
+        run: |
+          pip install -r requirements-ci.txt
+
+      - name: Lint with flake8
+        run: |
+          # Check for syntax errors and obvious bugs (hard fail)
+          flake8 ingestion/ processing/ orchestration/ \
+            --count --select=E9,F63,F7,F82 --show-source --statistics
+          # Check style issues (soft warnings, don't fail the build)
+          flake8 ingestion/ processing/ orchestration/ \
+            --count --max-line-length=100 --statistics --exit-zero
+
+      - name: Run tests
+        run: |
+          pytest tests/ -v --tb=short
+        # --tb=short = shorter traceback on failures (easier to read in CI logs)

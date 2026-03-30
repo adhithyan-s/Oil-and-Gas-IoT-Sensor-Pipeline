@@ -1,0 +1,14 @@
+# requirements-ci.txt
+# Lightweight dependencies for CI only.
+# We deliberately exclude pyspark, apache-airflow — they're too heavy
+# to install in a CI environment and are tested locally instead.
+# CI focuses on: code style + unit tests for pure Python logic.
+
+kafka-python==2.0.2
+boto3==1.34.34
+psycopg2-binary==2.9.9
+python-dotenv==1.0.1
+
+# Testing and linting
+pytest==7.4.4
+flake8==7.0.0
