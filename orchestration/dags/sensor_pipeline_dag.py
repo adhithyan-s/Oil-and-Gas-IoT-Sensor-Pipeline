@@ -110,7 +110,7 @@ def iot_sensor_pipeline():
     )
 
     response = client.list_objects_v2(
-        Bucket="raw_sensor_data",
+        Bucket="raw-sensor-data",
         Prefix=prefix,
         MaxKeys=1
     )

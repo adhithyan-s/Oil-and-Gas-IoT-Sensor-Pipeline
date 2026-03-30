@@ -20,7 +20,7 @@ Why Parquet instead of JSON for Silver/Gold?
   - Industry standard for data lakes. You'll see this everywhere.
 """
 
-import logging
+import logging, os
 from datetime import datetime, timezone, timedelta
 
 from pyspark.sql import SparkSession, DataFrame
@@ -39,9 +39,12 @@ logging.basicConfig(
 log = logging.getLogger(__name__)
  
 # ── MinIO / S3 config ──────────────────────────────────────────────────────────
-MINIO_ENDPOINT   = "http://localhost:9000"
-MINIO_ACCESS_KEY = "minioadmin"
-MINIO_SECRET_KEY = "minioadmin"
+#   - Local (laptop): http://localhost:9000
+#   - Docker/Airflow: http://minio:9000
+# Set in docker-compose under airflow environment, defaults to localhost for manual runs.
+MINIO_ENDPOINT   = os.getenv("MINIO_ENDPOINT", "http://localhost:9000")
+MINIO_ACCESS_KEY = os.getenv("MINIO_ACCESS_KEY", "minioadmin")
+MINIO_SECRET_KEY = os.getenv("MINIO_SECRET_KEY", "minioadmin")
  
 BRONZE_PATH = "s3a://raw-sensor-data/"
 SILVER_PATH = "s3a://silver/sensor_readings/"

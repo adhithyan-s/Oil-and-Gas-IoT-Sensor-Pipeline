@@ -116,7 +116,7 @@ services:
     networks:
       - pipeline-net
     ports:
-      - "5433:5432"
+      - "5432:5432"
     volumes:
       - postgres-data:/var/lib/postgresql/data
     environment:
@@ -175,6 +175,15 @@ services:
       _AIRFLOW_WWW_USER_CREATE: "true"
       _AIRFLOW_WWW_USER_USERNAME: admin
       _AIRFLOW_WWW_USER_PASSWORD: admin
+      # Passed into PySpark scripts so they use Docker-internal hostnames
+      MINIO_ENDPOINT: "http://minio:9000"
+      MINIO_ACCESS_KEY: "minioadmin"
+      MINIO_SECRET_KEY: "minioadmin"
+      PG_HOST: "postgres"
+      PG_PORT: "5432"
+      PG_DB: "iotdb"
+      PG_USER: "iotuser"
+      PG_PASS: "iotpass"
     command: standalone
     healthcheck:
       test: ["CMD", "curl", "--fail", "http://localhost:8080/health"]

@@ -15,7 +15,7 @@ What this script does:
 """
 
 
-import logging
+import logging, os
 from datetime import datetime, timezone, timedelta
  
 import psycopg2
@@ -32,19 +32,22 @@ logging.basicConfig(
 log = logging.getLogger(__name__)
  
 # ── Config ─────────────────────────────────────────────────────────────────────
-MINIO_ENDPOINT   = "http://localhost:9000"
-MINIO_ACCESS_KEY = "minioadmin"
-MINIO_SECRET_KEY = "minioadmin"
+# Environment variables allow same code to run locally and inside Docker.
+# Locally:        MINIO_ENDPOINT=http://localhost:9000, PG_HOST=127.0.0.1, PG_PORT=5433
+# Inside Docker:  MINIO_ENDPOINT=http://minio:9000,    PG_HOST=postgres,   PG_PORT=5432
+MINIO_ENDPOINT   = os.getenv("MINIO_ENDPOINT",   "http://localhost:9000")
+MINIO_ACCESS_KEY = os.getenv("MINIO_ACCESS_KEY", "minioadmin")
+MINIO_SECRET_KEY = os.getenv("MINIO_SECRET_KEY", "minioadmin")
  
 SILVER_PATH = "s3a://silver/sensor_readings/"
 GOLD_PATH   = "s3a://gold/equipment_health/"
  
 # PostgreSQL — where Grafana reads from
-PG_HOST = "127.0.0.1"
-PG_PORT = 5433
-PG_DB   = "iotdb"
-PG_USER = "iotuser"
-PG_PASS = "iotpass"
+PG_HOST = os.getenv("PG_HOST", "127.0.0.1")
+PG_PORT = int(os.getenv("PG_PORT", "5433"))
+PG_DB   = os.getenv("PG_DB",   "iotdb")
+PG_USER = os.getenv("PG_USER", "iotuser")
+PG_PASS = os.getenv("PG_PASS", "iotpass")
 
 # ── Health score thresholds ────────────────────────────────────────────────────
 # A "health score" is a single 0-100 number summarising equipment condition.
