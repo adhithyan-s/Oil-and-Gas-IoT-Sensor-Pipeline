@@ -1,7 +1,7 @@
 # monitoring/grafana/provisioning/datasources/postgres.yml
 #
 # This file tells Grafana to automatically connect to PostgreSQL on startup.
-# Without this, you'd have to manually add the datasource through the UI
+# Without this, we'd have to manually add the datasource through the UI
 # every time the container restarts.
 #
 # Provisioning = configuration as code.
