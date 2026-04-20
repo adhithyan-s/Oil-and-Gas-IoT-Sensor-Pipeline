@@ -1,7 +1,5 @@
 """
-silver_to_gold.py
-------------------
-PySpark job: Silver layer → Gold layer
+PySpark job: Silver layer -> Gold layer
  
 What this script does:
   1. Reads clean Parquet from MinIO 'silver' bucket
@@ -23,7 +21,7 @@ from pyspark.sql import SparkSession, Window
 from pyspark.sql import functions as F
 
 
-# ── Logging ────────────────────────────────────────────────────────────────────
+# -- Logging --------------------------------------------------------------------
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s [%(levelname)s] %(message)s",
@@ -31,7 +29,7 @@ logging.basicConfig(
 )
 log = logging.getLogger(__name__)
  
-# ── Config ─────────────────────────────────────────────────────────────────────
+# -- Config ---------------------------------------------------------------------
 # Environment variables allow same code to run locally and inside Docker.
 # Locally:        MINIO_ENDPOINT=http://localhost:9000, PG_HOST=127.0.0.1, PG_PORT=5433
 # Inside Docker:  MINIO_ENDPOINT=http://minio:9000,    PG_HOST=postgres,   PG_PORT=5432
@@ -49,7 +47,7 @@ PG_DB   = os.getenv("PG_DB",   "iotdb")
 PG_USER = os.getenv("PG_USER", "iotuser")
 PG_PASS = os.getenv("PG_PASS", "iotpass")
 
-# ── Health score thresholds ────────────────────────────────────────────────────
+# -- Health score thresholds ------------------------------------------------------
 # A "health score" is a single 0-100 number summarising equipment condition.
 # 100 = perfect, 0 = critical failure imminent.
 # Interviewers love asking how you designed domain-specific derived metrics.
@@ -60,8 +58,8 @@ PG_PASS = os.getenv("PG_PASS", "iotpass")
 #   Cap between 0 and 100.
 #
 # Penalty weights (tunable):
-ANOMALY_RATE_PENALTY    = 40   # if 100% readings are anomalies → -40 points
-INVALID_VALUE_PENALTY   = 30   # if 100% readings are invalid → -30 points
+ANOMALY_RATE_PENALTY    = 40   # if 100% readings are anomalies -> -40 points
+INVALID_VALUE_PENALTY   = 30   # if 100% readings are invalid -> -30 points
 HIGH_VIBRATION_PENALTY  = 20   # vibration > 5 mm/s is a strong wear signal
 LOW_RPM_PENALTY         = 10   # low RPM = pump struggling
 
@@ -198,8 +196,8 @@ def compute_alert_summary(df):
     """
     Count alerts by well and severity for the Grafana alert panel.
  
-    WARNING  → is_anomaly=True but value still within outer valid range
-    CRITICAL → is_anomaly=True AND value_valid=False (out of all bounds)
+    WARNING  -> is_anomaly=True but value still within outer valid range
+    CRITICAL -> is_anomaly=True AND value_valid=False (out of all bounds)
  
     Having a pre-aggregated alert table means Grafana queries are instant —
     no need to scan millions of raw records to render a dashboard.
@@ -336,7 +334,7 @@ def run(window_start=None, window_end=None):
         window_end = now.replace(minute=0, second=0, microsecond=0)
         window_start = window_end - timedelta(hours=1)
 
-    log.info(f"Processing window: {window_start} → {window_end}")
+    log.info(f"Processing window: {window_start} -> {window_end}")
 
     spark = create_spark_session()
 
@@ -364,7 +362,7 @@ def run(window_start=None, window_end=None):
         write_gold(df_health, df_sensor_stats, df_alerts, window_start)
         write_to_postgres(df_health, df_alerts, window_start)
  
-        log.info("Silver → Gold complete.")
+        log.info("Silver -> Gold complete.")
 
     finally:
         spark.stop()

@@ -1,5 +1,3 @@
-# monitoring/grafana/provisioning/dashboards/dashboard.yml
-#
 # Tells Grafana where to find dashboard JSON files on startup.
 # Any .json file in the path below is automatically loaded.
 

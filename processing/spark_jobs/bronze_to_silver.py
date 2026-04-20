@@ -1,7 +1,5 @@
 """
-bronze_to_silver.py
---------------------
-PySpark job: Bronze layer → Silver layer
+PySpark job: Bronze layer -> Silver layer
  
 What this script does:
   1. Reads raw NDJSON files from MinIO 'raw-sensor-data' bucket (Bronze)
@@ -30,7 +28,7 @@ from pyspark.sql.types import (
     StringType, DoubleType, BooleanType, TimestampType
 )
 
-# ── Logging ────────────────────────────────────────────────────────────────────
+# -- Logging ----------------------------------------------------------------
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s [%(levelname)s] %(message)s",
@@ -38,7 +36,7 @@ logging.basicConfig(
 )
 log = logging.getLogger(__name__)
  
-# ── MinIO / S3 config ──────────────────────────────────────────────────────────
+# -- MinIO / S3 config ----------------------------------------------------------
 #   - Local (laptop): http://localhost:9000
 #   - Docker/Airflow: http://minio:9000
 # Set in docker-compose under airflow environment, defaults to localhost for manual runs.
@@ -51,7 +49,7 @@ SILVER_PATH = "s3a://silver/sensor_readings/"
 # s3a:// is the Hadoop S3 connector protocol — this is what Spark uses to talk to S3-compatible storage.
 # 's3://' is AWS-only. 's3a://' works with MinIO too.
  
-# ── Business rules: valid sensor ranges ───────────────────────────────────────
+# -- Business rules: valid sensor ranges ----------------------------------------
 # If a reading falls outside these ranges it's either an anomaly or a sensor fault. 
 # We flag it but keep the record — never silently discard data.
 VALID_RANGES = {
@@ -62,7 +60,7 @@ VALID_RANGES = {
     "rpm":         (0.0,    5000.0),
 }
 
-# ── Bronze schema ──────────────────────────────────────────────────────────────
+# -- Bronze schema ----------------------------------------------------
 # Explicitly defining the schema does two things:
 #   1. Spark doesn't need to scan files to infer types (faster)
 #   2. Malformed records that don't match are caught immediately
@@ -168,7 +166,7 @@ def clean_and_validate(df) -> "DataFrame":
     Steps:
       1. Drop records with null well_id, timestamp, sensor_type, or value
          (these are the non-negotiable fields — useless without them)
-      2. Parse timestamp string → proper TimestampType
+      2. Parse timestamp string -> proper TimestampType
       3. Trim whitespace from string fields
       4. Add 'value_valid' flag: True if value is within known sensor range
       5. Add 'processed_at' column: when this ETL job ran
@@ -286,12 +284,12 @@ def log_quality_summary(df):
     invalid = df.filter(F.col("value_valid") == False).count()
     null_locs = df.filter(F.col("location").isNull()).count()
 
-    log.info("── Data Quality Summary ──────────────────")
+    log.info("--- Data Quality Summary -----------------")
     log.info(f"  Total records:      {total:,}")
     log.info(f"  Anomaly flagged:    {anomalies:,}  ({100*anomalies/total:.1f}%)")
     log.info(f"  Out-of-range:       {invalid:,}   ({100*invalid/total:.1f}%)")
     log.info(f"  Missing location:   {null_locs:,}")
-    log.info("─────────────────────────────────────────")
+    log.info("------------------------------------------")
 
     # Per-sensor breakdown
     log.info("  Anomalies by sensor:")
@@ -315,7 +313,7 @@ def run(window_start=None, window_end=None):
     if window_start is None:
         window_start, window_end = get_processing_window()
 
-    log.info(f"Processing window: {window_start} → {window_end}")
+    log.info(f"Processing window: {window_start} -> {window_end}")
 
     spark = create_spark_session()
 
@@ -331,7 +329,7 @@ def run(window_start=None, window_end=None):
         log_quality_summary(df)
         write_silver(df, window_start)
 
-        log.info("Bronze → Silver complete.")
+        log.info("Bronze -> Silver complete.")
 
     finally:
         spark.stop()

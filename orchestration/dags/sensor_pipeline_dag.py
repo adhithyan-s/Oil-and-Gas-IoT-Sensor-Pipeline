@@ -1,12 +1,10 @@
 """
-sensor_pipeline_dag.py
------------------------
 Airflow DAG: Orchestrates the full IoT sensor data pipeline.
  
 What this DAG does:
   Runs every hour and executes the full medallion pipeline:
  
-  [check_bronze_data] → [bronze_to_silver] → [silver_to_gold] → [pipeline_summary]
+  [check_bronze_data] -> [bronze_to_silver] -> [silver_to_gold] -> [pipeline_summary]
  
   Each box is a "task". Tasks run in the order defined by >> (the dependency operator). 
   If a task fails, downstream tasks don't run.
@@ -31,7 +29,7 @@ import logging
  
 log = logging.getLogger(__name__)
  
-# ── Default arguments ──────────────────────────────────────────────────────────
+# -- Default arguments ----------------------------------------------------------
 # These apply to every task in this DAG unless overridden per-task.
 # retries=2 means if a task fails, Airflow automatically retries it twice before marking it as failed and stopping downstream tasks.
 # This is why orchestration matters — a cron job would just fail silently.
@@ -45,7 +43,7 @@ default_args = {
 }
  
  
-# ── DAG definition ─────────────────────────────────────────────────────────────
+# -- DAG definition -------------------------------------------------------------
 # @dag decorator turns this function into an Airflow DAG.
 # schedule="5 * * * *" is cron syntax for "minute 5 of every hour".
 # Cron format: minute hour day month weekday
@@ -55,7 +53,7 @@ default_args = {
  
 @dag(
   dag_id="iot_sensor_pipeline",
-  description="Hourly pipeline: Kafka → MinIO Bronze → Silver → Gold → PostgreSQL",
+  description="Hourly pipeline: Kafka -> MinIO Bronze -> Silver -> Gold -> PostgreSQL",
   schedule="5 * * * *",
   start_date=datetime(2026, 3, 25),          # start scheduling from yesterday
   catchup=False,                   # don't backfill missed runs on first deploy
@@ -67,10 +65,10 @@ def iot_sensor_pipeline():
   IoT Sensor Pipeline DAG
 
   Processes one hour of sensor data per run through the full
-  Bronze → Silver → Gold medallion architecture.
+  Bronze -> Silver -> Gold medallion architecture.
   """
 
-  # ── Task 1: Check Bronze data exists ──────────────────────────────────────
+  # -- Task 1: Check Bronze data exists --------------------------------------
   # Before running expensive Spark jobs, verify data actually landed in MinIO.
   # This is called a "data availability check" — common in production pipelines.
   # Failing fast here saves time vs discovering no data halfway through Spark.
@@ -128,11 +126,11 @@ def iot_sensor_pipeline():
     # Return value is stored as XCom — downstream tasks can read it
     return {"target_hour": target_hour.isoformat(), "prefix": prefix}
   
-  # ── Task 2: Run Bronze → Silver ────────────────────────────────────────────
+  # -- Task 2: Run Bronze -> Silver -------------------------------------------
   @task
   def run_bronze_to_silver(**context):
     """
-      Run the Bronze→Silver PySpark transformation.
+      Run the Bronze->Silver PySpark transformation.
 
       Imports and calls the run() function from our existing script.
       This keeps the DAG thin — it's just orchestration, not logic.
@@ -151,17 +149,17 @@ def iot_sensor_pipeline():
     window_end = execution_date.replace(minute=0, second=0, microsecond=0)
     window_start = window_end - timedelta(hours=1)
 
-    log.info(f"Running Bronze→Silver for window: {window_start} → {window_end}")
+    log.info(f"Running Bronze->Silver for window: {window_start} -> {window_end}")
     bronze_to_silver_run(window_start=window_start, window_end=window_end)
-    log.info("Bronze→Silver complete.")
+    log.info("Bronze->Silver complete.")
 
     return {"window_start": window_start.isoformat()}
   
-  # ── Task 3: Run Silver → Gold ──────────────────────────────────────────────
+  # -- Task 3: Run Silver -> Gold -------------------------------------------------
   @task
   def run_silver_to_gold(**context):
     """
-      Run the Silver→Gold PySpark transformation.
+      Run the Silver->Gold PySpark transformation.
       Depends on bronze_to_silver completing successfully — Airflow
       enforces this via the >> dependency operator below.
     """
@@ -173,13 +171,13 @@ def iot_sensor_pipeline():
     window_end = execution_date.replace(minute=0, second=0, microsecond=0)
     window_start = window_end - timedelta(hours=1)
 
-    log.info(f"Running Silver→Gold for window: {window_start} → {window_end}")
+    log.info(f"Running Silver->Gold for window: {window_start} -> {window_end}")
     silver_to_gold_run(window_start=window_start, window_end=window_end)
-    log.info("Silver→Gold complete.")
+    log.info("Silver->Gold complete.")
 
     return {"window_start": window_start.isoformat()}
   
-  # ── Task 4: Pipeline summary ───────────────────────────────────────────────
+  # -- Task 4: Pipeline summary ----------------------------------------------
   @task
   def pipeline_summary(**context):
     """
@@ -222,24 +220,24 @@ def iot_sensor_pipeline():
     cur.close()
     conn.close()
 
-    log.info("── Pipeline Summary ──────────────────────")
+    log.info("-- Pipeline Summary ----------------------")
     log.info(f"  Wells tracked:   {well_count}")
     log.info(f"  Total alerts:    {alert_count}")
     log.info("  Well health status:")
     for well_id, score, status in rows:
         log.info(f"    {well_id}: {score} ({status})")
-    log.info("──────────────────────────────────────────")
+    log.info("------------------------------------------")
 
     return {
         "well_count":  well_count,
         "alert_count": alert_count,
     }
   
-  # ── Wire up task dependencies ──────────────────────────────────────────────
+  # -- Wire up task dependencies ----------------------------------------------
   # >> means "then". This defines the execution order.
   # If any task fails, all tasks to its right are skipped.
   #
-  # check_bronze_data → bronze_to_silver → silver_to_gold → pipeline_summary
+  # check_bronze_data -> bronze_to_silver -> silver_to_gold -> pipeline_summary
   #
   # This is the DAG structure (Directed Acyclic Graph):
   # - Directed: flows left to right

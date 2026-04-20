@@ -1,6 +1,4 @@
 """
-kafka_consumer.py
-------------------
 Reads sensor readings from Kafka and writes them to MinIO (Bronze layer).
  
 What this script does:
@@ -35,7 +33,7 @@ import boto3
 from botocore.client import Config
 from kafka import KafkaConsumer
 
-# ── Logging ────────────────────────────────────────────────────────────────────
+# -- Logging ------------------------------------------------------------------
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s [%(levelname)s] %(message)s",
@@ -43,7 +41,7 @@ logging.basicConfig(
 )
 log = logging.getLogger(__name__)
  
-# ── Kafka config ───────────────────────────────────────────────────────────────
+# -- Kafka config -------------------------------------------------------------
 KAFKA_BOOTSTRAP_SERVERS = "localhost:29092"
 KAFKA_TOPIC             = "sensor-readings"
 KAFKA_GROUP_ID          = "sensor-consumer-group"
@@ -52,13 +50,13 @@ KAFKA_GROUP_ID          = "sensor-consumer-group"
 # splits the work between them (load balancing). Each message goes to only
 # one consumer in the group. This is how to scale consumers in production.
  
-# ── MinIO (S3) config ──────────────────────────────────────────────────────────
+# -- MinIO (S3) config ---------------------------------------------------------
 MINIO_ENDPOINT    = "http://localhost:9000"   # MinIO's S3 API port
 MINIO_ACCESS_KEY  = "minioadmin"
 MINIO_SECRET_KEY  = "minioadmin"
 BRONZE_BUCKET     = "raw-sensor-data"        # Bronze layer bucket
  
-# ── Batching config ────────────────────────────────────────────────────────────
+# -- Batching config -----------------------------------------------------------
 BATCH_SIZE         = 100    # write to MinIO after 100 messages
 BATCH_INTERVAL_SEC = 30     # OR after 30 seconds, whichever comes first
 

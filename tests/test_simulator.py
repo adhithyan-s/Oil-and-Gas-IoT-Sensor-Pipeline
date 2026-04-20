@@ -1,4 +1,3 @@
-
 """
 Unit tests for the sensor simulator's core logic.
 """

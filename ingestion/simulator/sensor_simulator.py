@@ -1,6 +1,4 @@
 """
-sensor_simulator.py
---------------------
 Simulates real-time sensor telemetry from oilfield equipment.
  
 What this script does:
@@ -25,7 +23,7 @@ import json, time, random, logging
 from datetime import datetime
 from kafka import KafkaProducer
 
-# ── Logging setup ──────────────────────────────────────────────────────────────
+# -- Logging setup --------------------------------------------------------------
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s [%(levelname)s] %(message)s",
@@ -33,13 +31,13 @@ logging.basicConfig(
 )
 log = logging.getLogger(__name__)
 
-# ── Config ─────────────────────────────────────────────────────────────────────
+# -- Config ----------------------------------------------------------------------
 KAFKA_BOOTSTRAP_SERVERS = "localhost:29092"
 KAFKA_TOPIC = "sensor-readings"
 EMIT_INTERVAL_SECONDS = 5                       # one reading per well every 5 seconds
 ANOMALY_PROBABILITY = 0.05                      # 5% chance any reading is anomalous
 
-# ── Wells ──────────────────────────────────────────────────────────────────────
+# -- Wells -----------------------------------------------------------------------
 # In a real system these would come from a config file or database.
 # Each well ID maps to a geographic location.
 WELLS = [
@@ -50,11 +48,11 @@ WELLS = [
     {"well_id": "WELL-005", "location": "Offshore Rig E",    "depth_m": 3500},
 ]
 
-# ── Sensor definitions ─────────────────────────────────────────────────────────
+# -- Sensor definitions ------------------------------------------------------------
 # Each sensor has:
-#   normal_range  → what a healthy reading looks like (min, max)
-#   anomaly_range → what a spike/fault looks like (min, max)
-#   unit          → unit of measurement
+#   normal_range  -> what a healthy reading looks like (min, max)
+#   anomaly_range -> what a spike/fault looks like (min, max)
+#   unit          -> unit of measurement
 #
 # These ranges are realistic for oilfield equipment.
 # Pressure: wellhead pressure in PSI
@@ -129,7 +127,7 @@ def create_producer() -> KafkaProducer:
     Create and return a Kafka producer.
  
     KafkaProducer is the object that sends messages to Kafka.
-    value_serializer converts our Python dict → JSON bytes automatically, so we never have to call json.dumps() manually.
+    value_serializer converts our Python dict -> JSON bytes automatically, so we never have to call json.dumps() manually.
  
     retries=5 means if Kafka is temporarily unavailable, it tries 5 times before giving up — important for startup ordering.
     """
@@ -156,7 +154,7 @@ def run_simulator(producer: KafkaProducer):
 
     log.info(
         f"Starting simulator: {len(WELLS)} wells * {len(SENSORS)} sensors "
-        f"every {EMIT_INTERVAL_SECONDS} seconds → topic '{KAFKA_TOPIC}'"
+        f"every {EMIT_INTERVAL_SECONDS} seconds -> topic '{KAFKA_TOPIC}'"
     )
     log.info("Press Ctrl+C to stop.\n")
 
