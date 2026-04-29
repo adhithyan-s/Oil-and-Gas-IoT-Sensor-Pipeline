@@ -14,13 +14,13 @@ A production-style, end-to-end data engineering pipeline that simulates real-tim
 
 ---
 
-## 📊 Dashboard
+## Dashboard
 
 ![Grafana Dashboard](docs/grafana_dashboard.png)
 
 ---
 
-## 🏗️ Architecture
+## Architecture
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
@@ -81,7 +81,7 @@ A production-style, end-to-end data engineering pipeline that simulates real-tim
 
 ---
 
-## 📡 Simulated Sensors
+## Simulated Sensors
 
 5 oilfield wells, each emitting readings every 5 seconds across 5 sensor types:
 
@@ -97,7 +97,7 @@ Anomalies are injected at ~5% probability using a normal distribution — not fl
 
 ---
 
-## 🧱 Medallion Architecture
+## Medallion Architecture
 
 | Layer      | Location           | What happens                                                                                                                |
 |------------|--------------------|-----------------------------------------------------------------------------------------------------------------------------|
@@ -107,7 +107,7 @@ Anomalies are injected at ~5% probability using a normal distribution — not fl
 
 ---
 
-## 🛠️ Tech Stack
+## Tech Stack
 
 | Layer            | Tool                    | Purpose                                |
 |------------------|-------------------------|----------------------------------------|
@@ -122,7 +122,7 @@ Anomalies are injected at ~5% probability using a normal distribution — not fl
 
 ---
 
-## 🚀 How to Run the Project
+## How to Run the Project
 
 ### Prerequisites
 - Docker Desktop installed and running
@@ -212,7 +212,7 @@ Use the same pattern for `silver_to_gold`. Replace the hour with whatever hour y
 
 ---
 
-## 🌐 Service URLs and Credentials
+## Service URLs and Credentials
 
 | Service           | URL                   | Username     | Password     | What you can do                        |
 |-------------------|-----------------------|--------------|--------------|----------------------------------------|
@@ -226,7 +226,7 @@ PostgreSQL is exposed on port 5433 (not 5432) to avoid conflicts with any local 
 
 ---
 
-## 📁 Project Structure
+## Project Structure
 
 ```
 Oil-and-Gas-IoT-Sensor-Pipeline/
@@ -265,7 +265,7 @@ Oil-and-Gas-IoT-Sensor-Pipeline/
 
 ---
 
-## 🔄 CI/CD
+## CI/CD
 
 GitHub Actions runs on every push to main:
 
@@ -277,7 +277,7 @@ The green badge at the top of this README is live and reflects the current state
 
 ---
 
-## 💡 Key Engineering Decisions
+## Key Engineering Decisions
 
 **Why Kafka over a simple REST API?**
 Kafka decouples the producer (sensors) from the consumer (storage). If the consumer goes down, Kafka retains messages and delivers them when it recovers. This mirrors how real industrial IoT systems handle unreliable network conditions. A REST API would lose data during downtime.
