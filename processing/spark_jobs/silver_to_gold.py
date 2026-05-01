@@ -42,7 +42,7 @@ GOLD_PATH   = "s3a://gold/equipment_health/"
  
 # PostgreSQL — where Grafana reads from
 PG_HOST = os.getenv("PG_HOST", "127.0.0.1")
-PG_PORT = int(os.getenv("PG_PORT", "5433"))
+PG_PORT = int(os.getenv("PG_PORT", "5432"))
 PG_DB   = os.getenv("PG_DB",   "iotdb")
 PG_USER = os.getenv("PG_USER", "iotuser")
 PG_PASS = os.getenv("PG_PASS", "iotpass")
