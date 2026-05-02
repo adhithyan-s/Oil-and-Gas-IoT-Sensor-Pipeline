@@ -14,3 +14,5 @@ __pycache__/
 
 # Jupyter
 .ipynb_checkpoints/ml/model/
+mlruns/
+ml/model/
