@@ -227,16 +227,130 @@
           "refId": "A"
         }
       ]
+    },
+    {
+      "datasource": { "type": "postgres", "uid": "PE80E288BF7F2C4BD" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "custom": { "align": "auto", "cellOptions": { "type": "auto" }, "inspect": false },
+          "mappings": [],
+          "thresholds": { "mode": "absolute", "steps": [ { "color": "green", "value": null }, { "color": "yellow", "value": 0.5 }, { "color": "red", "value": 0.55 } ] }
+        },
+        "overrides": [
+          {
+            "matcher": { "id": "byName", "options": "Risk Level" },
+            "properties": [
+              { "id": "custom.cellOptions", "value": { "mode": "basic", "type": "color-background" } },
+              { "id": "mappings", "value": [
+                { "options": {
+                    "HIGH":   { "color": "red",    "index": 2 },
+                    "MEDIUM": { "color": "yellow", "index": 1 },
+                    "LOW":    { "color": "green",  "index": 0 }
+                  }, "type": "value"
+                }
+              ]}
+            ]
+          },
+          {
+            "matcher": { "id": "byName", "options": "Anomaly" },
+            "properties": [
+              { "id": "custom.cellOptions", "value": { "mode": "basic", "type": "color-background" } },
+              { "id": "mappings", "value": [
+                { "options": {
+                    "true":  { "color": "red",   "index": 1, "text": "YES" },
+                    "false": { "color": "green", "index": 0, "text": "NO"  }
+                  }, "type": "value"
+                }
+              ]}
+            ]
+          }
+        ]
+      },
+      "gridPos": { "h": 8, "w": 14, "x": 0, "y": 20 },
+      "id": 9,
+      "options": { "cellHeight": "sm", "footer": { "show": false }, "showHeader": true },
+      "title": "ML Anomaly Detection — Latest Scores",
+      "description": "Isolation Forest model scores updated after each pipeline run. Risk level: LOW < 0.50, MEDIUM 0.50–0.55, HIGH > 0.55.",
+      "type": "table",
+      "targets": [
+        {
+          "datasource": { "type": "postgres", "uid": "PE80E288BF7F2C4BD" },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT well_id AS \"Well\", anomaly_score AS \"Anomaly Score\", risk_level AS \"Risk Level\", is_anomaly::text AS \"Anomaly\", health_score AS \"Health Score\", top_sensor_1 AS \"Top Sensor\", scored_at AS \"Last Scored\" FROM ml_anomaly_scores WHERE scored_at = (SELECT MAX(scored_at) FROM ml_anomaly_scores s2 WHERE s2.well_id = ml_anomaly_scores.well_id) ORDER BY anomaly_score DESC;",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "datasource": { "type": "postgres", "uid": "PE80E288BF7F2C4BD" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "palette-classic" },
+          "custom": {
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "Anomaly Score",
+            "axisPlacement": "auto",
+            "drawStyle": "line",
+            "fillOpacity": 15,
+            "gradientMode": "none",
+            "lineInterpolation": "smooth",
+            "lineWidth": 2,
+            "pointSize": 6,
+            "showPoints": "auto",
+            "spanNulls": false
+          },
+          "mappings": [],
+          "max": 1,
+          "min": 0,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green",  "value": null },
+              { "color": "yellow", "value": 0.50 },
+              { "color": "red",    "value": 0.55 }
+            ]
+          },
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "gridPos": { "h": 8, "w": 10, "x": 14, "y": 20 },
+      "id": 10,
+      "options": {
+        "legend": { "calcs": ["lastNotNull", "max"], "displayMode": "table", "placement": "bottom", "showLegend": true },
+        "tooltip": { "mode": "multi", "sort": "desc" },
+        "thresholds": {
+          "mode": "line",
+          "show": true
+        }
+      },
+      "title": "ML Anomaly Score Over Time — All Wells",
+      "description": "Higher score = more anomalous. Threshold lines: yellow=MEDIUM (0.50), red=HIGH (0.55).",
+      "type": "timeseries",
+      "targets": [
+        {
+          "datasource": { "type": "postgres", "uid": "PE80E288BF7F2C4BD" },
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "SELECT scored_at AS \"time\", well_id AS metric, anomaly_score AS \"Anomaly Score\" FROM ml_anomaly_scores ORDER BY scored_at;",
+          "refId": "A"
+        }
+      ]
     }
   ],
   "refresh": "30s",
   "schemaVersion": 38,
-  "tags": ["iot", "oil-gas", "sensors"],
+  "tags": ["iot", "oil-gas", "sensors", "ml", "anomaly-detection"],
   "templating": { "list": [] },
   "time": { "from": "now-7d", "to": "now" },
   "timepicker": {},
   "timezone": "browser",
   "title": "IoT Sensor Pipeline — Equipment Health",
   "uid": "iot-sensor-health",
-  "version": 1
+  "version": 2
 }
