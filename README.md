@@ -22,7 +22,7 @@ A production-style, end-to-end data engineering and ML pipeline that simulates r
 
 ---
 
-## 🏗️ Architecture
+## Architecture
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
