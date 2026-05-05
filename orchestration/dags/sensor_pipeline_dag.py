@@ -249,8 +249,42 @@ def iot_sensor_pipeline():
   s_to_g = run_silver_to_gold()
   summary = pipeline_summary()
 
-  bronze_check >> b_to_s >> s_to_g >> summary
+  scoring = score_anomalies()
+  bronze_check >> b_to_s >> s_to_g >> scoring >> summary
 
 
 # Instantiate the DAG — Airflow looks for a DAG object at module level
 dag_instance = iot_sensor_pipeline()
+
+# -- Task 5: ML Anomaly Scoring --------------------------------------------
+@task
+def score_anomalies(**context):
+  """
+  Run Isolation Forest anomaly scoring on all wells after each pipeline run.
+  Writes results to ml_anomaly_scores table for Grafana ML panels.
+
+  Runs after silver_to_gold so it scores on the latest Silver layer data.
+  If scoring fails, it logs a warning but does not block pipeline_summary —
+  ML scoring failure should never fail the core data pipeline.
+  """
+  import sys
+  import subprocess
+
+  log.info("Running ML anomaly scoring ...")
+  try:
+      result = subprocess.run(
+          ["python", "/opt/airflow/processing/../ml/score_all_wells.py"],
+          capture_output=True,
+          text=True,
+          timeout=120
+      )
+      if result.returncode == 0:
+          log.info("ML scoring complete.")
+          log.info(result.stdout)
+      else:
+          log.warning(f"ML scoring exited with code {result.returncode}")
+          log.warning(result.stderr)
+  except Exception as e:
+      log.warning(f"ML scoring failed (non-blocking): {e}")
+
+  return {"status": "scoring_attempted"}

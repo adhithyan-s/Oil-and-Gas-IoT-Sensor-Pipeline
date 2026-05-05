@@ -116,46 +116,63 @@ def create_spark_session() -> SparkSession:
     return spark
 
 
-def get_processing_window():
+def get_all_bronze_paths(spark) -> list:
     """
-    Return the time window to process — defaults to the past 1 hour.
- 
-    In production Airflow passes the execution date as a parameter.
-    For manual runs we default to the last hour.
- 
-    This is how incremental processing works — each run only processes
-    new data, not the entire dataset from the beginning.
+    Scan MinIO for all available Bronze data paths instead of assuming a fixed time window. 
+    This enables backfill — processing all historical data regardless of when it was ingested.
     """
+    import boto3
+    from botocore.client import Config
 
-    now = datetime.now(timezone.utc)
-    window_end = now.replace(minute=0, second=0, microsecond=0)
-    window_start = window_end - timedelta(hours=1)
-
-    return window_start, window_end
-
-
-def read_bronze(spark: SparkSession, window_start: datetime) -> "DataFrame":
-    """
-    Read Bronze JSON files for the processing window from MinIO.
- 
-    We construct the S3 path using the partition structure we built
-    in the consumer (year=/month=/day=/hour=/).
-    This means Spark only reads the relevant hour's files, not everything.
-    """
-
-    path = (
-        f"{BRONZE_PATH}"
-        f"year={window_start.year}/"
-        f"month={window_start.month:02d}/"
-        f"day={window_start.day:02d}/"
-        f"hour={window_start.hour:02d}/"
+    s3 = boto3.client(
+        "s3",
+        endpoint_url=MINIO_ENDPOINT,
+        aws_access_key_id=MINIO_ACCESS_KEY,
+        aws_secret_access_key=MINIO_SECRET_KEY,
+        config=Config(signature_version="s3v4"),
+        region_name="us-east-1"
     )
-    log.info(f"Reading Bronze data from: {path}")
 
-    df = spark.read.schema(BRONZE_SCHEMA).json(path)
+    paginator = s3.get_paginator("list_objects_v2")
+    pages = paginator.paginate(Bucket="raw-sensor-data", Delimiter="/")
+
+    # Collect all hour-level prefixes
+    paths = []
+    result = s3.list_objects_v2(Bucket="raw-sensor-data", Prefix="year=", Delimiter="")
+    
+    # Get all unique hour-level paths
+    hour_paths = set()
+    for obj in result.get("Contents", []):
+        key = obj["Key"]
+        # Extract up to hour level: year=X/month=X/day=X/hour=X/
+        parts = key.split("/")
+        if len(parts) >= 4:
+            hour_path = "/".join(parts[:4]) + "/"
+            hour_paths.add(hour_path)
+
+    for path in sorted(hour_paths):
+        full_path = f"s3a://raw-sensor-data/{path}"
+        paths.append(full_path)
+        log.info(f"  Found bronze path: {full_path}")
+
+    return paths
+
+
+def read_bronze_all(spark: SparkSession) -> "DataFrame":
+    """
+    Read ALL Bronze JSON files across all available time partitions.
+    Used for backfill and when exact window is unknown.
+    """
+    paths = get_all_bronze_paths(spark)
+
+    if not paths:
+        log.warning("No bronze data found in MinIO.")
+        return None
+
+    log.info(f"Reading {len(paths)} hour partition(s) from Bronze ...")
+    df = spark.read.schema(BRONZE_SCHEMA).json(paths)
     raw_count = df.count()
-    log.info(f"  Raw records read: {raw_count:,}")
-
+    log.info(f"  Total raw records read: {raw_count:,}")
     return df
 
 
@@ -305,29 +322,41 @@ def log_quality_summary(df):
 def run(window_start=None, window_end=None):
     """
     Main entry point. Called directly or by Airflow.
- 
-    When Airflow calls this, it passes the DAG execution window
-    so each run processes exactly the right slice of data.
+    When called without arguments, reads ALL available bronze data (backfill mode).
+    When called by Airflow with a window, processes only that window.
     """
-
-    if window_start is None:
-        window_start, window_end = get_processing_window()
-
-    log.info(f"Processing window: {window_start} -> {window_end}")
+    log.info("Starting Bronze -> Silver job ...")
 
     spark = create_spark_session()
 
     try:
-        df = read_bronze(spark, window_start)
+        if window_start is not None:
+            # Airflow mode — process specific window
+            path = (
+                f"{BRONZE_PATH}"
+                f"year={window_start.year}/"
+                f"month={window_start.month:02d}/"
+                f"day={window_start.day:02d}/"
+                f"hour={window_start.hour:02d}/"
+            )
+            log.info(f"Airflow mode — reading from: {path}")
+            df = spark.read.schema(BRONZE_SCHEMA).json(path)
+        else:
+            # Backfill mode — read everything available
+            log.info("Backfill mode — reading all available Bronze data ...")
+            df = read_bronze_all(spark)
 
-        if df.rdd.isEmpty():
-            log.info("No data found for this window. Exiting.")
+        if df is None or df.rdd.isEmpty():
+            log.info("No data found. Exiting.")
             return
-        
+
         df = clean_and_validate(df)
-        df.dropDuplicates()
+        df = df.dropDuplicates(["well_id", "timestamp", "sensor_type"])
         log_quality_summary(df)
-        write_silver(df, window_start)
+
+        # Use today's date for the silver output path
+        window_start_for_output = datetime.now(timezone.utc)
+        write_silver(df, window_start_for_output)
 
         log.info("Bronze -> Silver complete.")
 

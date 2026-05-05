@@ -13,4 +13,6 @@ __pycache__/
 .DS_Store
 
 # Jupyter
-.ipynb_checkpoints/
+.ipynb_checkpoints/ml/model/
+mlruns/
+ml/model/
